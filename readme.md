@@ -142,9 +142,9 @@ configs/
 
 ## 1. Clone Repository
 
-```bash id="i9a4b5"
-git clone <your-repo-url>
-cd <project-name>
+```
+git clone https://github.com/rchmachina/rach-fw
+cd  github.com/rchmachina/rach-fw
 ```
 
 ---
