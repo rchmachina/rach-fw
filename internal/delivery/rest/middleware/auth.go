@@ -1,60 +1,50 @@
 package middleware
 
 import (
-	"log"
+	"context"
 	"net/http"
 	"strings"
-	"time"
-	helper "github.com/rchmachina/rach-fw/internal/utils/helper"
+
+	constant "github.com/rchmachina/rach-fw/internal/const"
+	logg "github.com/rchmachina/rach-fw/internal/infrastructure/logger"
+	"github.com/rchmachina/rach-fw/internal/utils/helper"
 	jwtToken "github.com/rchmachina/rach-fw/internal/utils/jwt"
 
 	"github.com/gin-gonic/gin"
 )
 
-
-type Result struct {
-	Code    int         `json:"code"`
-	Data    interface{} `json:"data"`
-	Message string      `json:"message"`
-}
-
-
-
-func Auth(handlerFunc gin.HandlerFunc) gin.HandlerFunc {
+func Auth(logger logg.Logger, secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		logger := logger.WithCtx(c)
 		token := c.GetHeader("Authorization")
-
 		if token == "" {
-			c.JSON(http.StatusUnauthorized, Result{Code: http.StatusUnauthorized, Message: "unauthorized"})
+			logger.Error("unauthorized", logg.ToField("unauthorized", "token not valid"))
+			helper.JSONResponse(c, http.StatusUnauthorized, "unauthorized")
 			c.Abort()
 			return
 		}
 
-		token = strings.Split(token, "Bearer ")[1]
+		parts := strings.SplitN(token, "Bearer ", 2)
+		if len(parts) != 2 {
+			logger.Error("unauthorized", logg.ToField("unauthorized", "token split is less than 2 word"))
+			helper.JSONResponse(c, http.StatusUnauthorized, "unauthorized")
+			c.Abort()
+			return
+		}
 
-		claims, err := jwtToken.DecodeToken(token)
+		token = parts[1]
+
+		claims, err := jwtToken.DecodeToken(token, secretKey)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, Result{Code: http.StatusUnauthorized, Message: "unauthorized"})
+			helper.JSONResponse(c, http.StatusUnauthorized, "invalid token")
 			c.Abort()
 			return
 		}
 
-		expiry, ok := claims["expiry"].(float64)
-		if !ok {
-			log.Println("expiry value is not of type float64")
-			return
-			
-		}
-		roles, ok := claims["roles"].(string)
-		if !ok {
-			log.Println("expiry value is not of type float64")
-			return
-		}
-		if float64(time.Now().Unix()) > expiry {
-			helper.JSONResponse(c,401,"token already expired")
-			return
-		}
-		c.Set("roles",roles)
-		handlerFunc(c)
+		ctx := context.WithValue(c.Request.Context(), constant.UserInfoKey, claims)
+		c.Set("userInfo", claims)
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
 	}
 }

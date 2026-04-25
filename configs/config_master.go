@@ -4,33 +4,67 @@ package configs
 import (
 	"log"
 	"os"
-
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
+	"strconv"
+	"time"
 )
 
 var osGetenv = os.Getenv
 
 type Configs struct {
-	Db    *gorm.DB
-	Redis *redis.Client
-	Port  string
+	DbConf        string
+	RedisConf     string
+	Port          string
+	IsProduction  bool
+	AccesTokenKey string
+	TTlRedis      TTlRedis
+}
+type TTlRedis struct {
+	TTLAttemp       time.Duration
+	TTLRefreshToken time.Duration
+	TTLAccessToken  time.Duration
 }
 
-func LoadConfig() (*Configs, error) {
-	getDb, err := NewDB(osGetenv("DSN_DB"))
+func LoadConfig() *Configs {
+	isProduction := GetConfig("IS_PRODUCTION")
+	isProductionBool, err := strconv.ParseBool(isProduction)
 	if err != nil {
-		log.Panic(err)
+		isProductionBool = false
 	}
-	getRedis := NewRedisClient(osGetenv("REDIS_CLIENT"))
+
+	///redis ttl
+	TtlAttemp := GetConfig("TTL_ATTEMP")
+
+	TtlAttempTime, err := time.ParseDuration(TtlAttemp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	TtlRefreshToken := GetConfig("TTL_REFRESH_TOKEN")
+	TtlRefreshTokenTime, err := time.ParseDuration(TtlRefreshToken)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	TtlAccessToken := GetConfig("TTL_ACCESS_TOKEN")
+
+	TtlAccessTokenTime, err := time.ParseDuration(TtlAccessToken)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return &Configs{
-		Db:    getDb,
-		Redis: getRedis,
-		Port:  GetConfig("PORT"),
-	}, nil
+		DbConf:        osGetenv("DSN_DB"),
+		RedisConf:     osGetenv("REDIS_CLIENT"),
+		Port:          osGetenv("PORT"),
+		IsProduction:  isProductionBool,
+		AccesTokenKey: osGetenv("ACCESS_TOKEN"),
+		TTlRedis: TTlRedis{
+			TTLAttemp:       TtlAttempTime,
+			TTLRefreshToken: TtlRefreshTokenTime,
+			TTLAccessToken:  TtlAccessTokenTime,
+		},
+	}
 }
 
-func GetConfig(key string)string{
+func GetConfig(key string) string {
 	return osGetenv(key)
 }

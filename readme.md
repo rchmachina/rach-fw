@@ -176,13 +176,13 @@ go mod tidy
 
 ## 4. Run Application
 
-```bash id="l3g0h1"
+```bash"
 go run cmd/rest/rest.go
 ```
 
 Or use hot reload:
 
-```bash id="m4i2j3"
+```bash"
 air
 ```
 
@@ -280,4 +280,4 @@ delivery/rest/routes/
 
 # 🤝 Contributing
 
-Contributions are welcome 🚀
+Contributor are welcome 🚀

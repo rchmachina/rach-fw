@@ -14,16 +14,11 @@ import (
 func main() {
 
 	godotenv.Load()
-	conf, err := configs.LoadConfig()
-	if err != nil {
-		log.Panic(err)
-	}
+	conf := configs.LoadConfig()
 
-	log.Println("conf port ", conf.Port)
-
-	container := app.NewContainerUser(conf.Db)
+	container := app.NewContainerRest(*conf)
 
 	gin := delivery.NewRouter(container).Setup()
-
+	log.Println("running on  ", conf.Port)
 	gin.Run(conf.Port)
 }

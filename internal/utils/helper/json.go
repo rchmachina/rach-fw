@@ -6,7 +6,7 @@ import (
 )
 
 func JSONResponse(c *gin.Context, statusCode int, msg interface{}) {
-	c.JSON(statusCode, gin.H{"response": msg})
+	c.JSON(statusCode, gin.H{"data": msg})
 }
 
 func ToJSON(v interface{}) string {
